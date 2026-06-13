@@ -5,6 +5,7 @@ pipeline {
         IMAGE_NAME = 'devops-ci-demo'
         IMAGE_TAG  = "${env.BUILD_NUMBER}"
         CONTAINER  = 'devops-ci-demo'
+        HOST_PORT  = '8081'   // 8080 is used by Jenkins itself
     }
 
     stages {
@@ -32,10 +33,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying container...'
-                // Stop any previous container, then run the new one on port 8080
+                // Stop any previous container, then run the new one
                 sh '''
                     docker rm -f $CONTAINER || true
-                    docker run -d --name $CONTAINER -p 8080:80 $IMAGE_NAME:latest
+                    docker run -d --name $CONTAINER -p $HOST_PORT:80 $IMAGE_NAME:latest
                 '''
             }
         }
@@ -43,14 +44,14 @@ pipeline {
         stage('Verify') {
             steps {
                 echo 'Verifying the site responds...'
-                sh 'sleep 3 && curl -f http://localhost:8080 > /dev/null && echo "Site is up ✅"'
+                sh 'sleep 3 && curl -f http://localhost:$HOST_PORT > /dev/null && echo "Site is up ✅"'
             }
         }
     }
 
     post {
         success {
-            echo "✅ Pipeline succeeded — site running at http://localhost:8080"
+            echo "✅ Pipeline succeeded — site running on port ${HOST_PORT}"
         }
         failure {
             echo '❌ Pipeline failed — check the stage logs above.'
